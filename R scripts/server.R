@@ -8,6 +8,7 @@
 #
 
 library(shiny)
+library(tidyverse)
 
 # Define server logic required to draw a histogram
 function(input, output, session) {
@@ -22,7 +23,7 @@ function(input, output, session) {
             arrange(year)
         
         
-        plot(data$year, data$value, type="l")
+        data %>% ggplot(aes(year, value))+geom_line() + theme_classic()
         
     })
     
