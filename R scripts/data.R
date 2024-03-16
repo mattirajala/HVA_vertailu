@@ -9,7 +9,6 @@ getRegions = function(){
   url = 'https://sotkanet.fi/rest//1.1/regions'
   
   resp = GET(url)
-  resp$content
   d =  fromJSON(rawToChar(resp$content), flatten = T) %>% unnest_longer(memberOf, keep_empty = T)
   
   regions = d %>% 
@@ -27,6 +26,7 @@ Region_Names_HVA = function(){
   hva = regions$id %>% as.vector()
   names(hva) = regions$title.fi_HVA %>% as.vector() 
   hva = hva %>% sort()
+  
   return(hva)
 }
  

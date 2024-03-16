@@ -11,19 +11,25 @@ library(shiny)
 library(tidyverse)
 
 # Define server logic required to draw a histogram
+
+HVA_names = getRegions() %>% 
+    select(id, title.fi_HVA) %>% 
+    distinct() %>% 
+    rename(name = title.fi_HVA)
 function(input, output, session) {
 
     
     output$newPlot = renderPlot({
         
         
-        data = getIndicatorData(indicator_id = input$IND, year = 2000:2020)
+        data = getIndicatorData(indicator_id = input$IND, year = 2000:2023)
         data = data %>% 
-            filter(region == input$HVA) %>% 
-            arrange(year)
+            filter(region %in% input$HVA) %>% 
+            arrange(year) %>% 
+            left_join(HVA_names, by=c('region' = 'id'))
         
         
-        data %>% ggplot(aes(year, value))+geom_line() + theme_classic()
+        data %>% ggplot(aes(year, value, col = name))+geom_line(size=1.5) + theme_classic()
         
     })
     

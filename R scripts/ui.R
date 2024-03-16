@@ -29,7 +29,7 @@ navbarPage(
                                  max = 50,
                                  value = 30),
                      
-                     selectInput("HVA", "Hyvinvointialue", alueet),
+                     selectInput("HVA", "Hyvinvointialue", alueet, multiple = T),
                      selectInput("IND", "Indikaattori", indikaattorit)
                  ),
                  
