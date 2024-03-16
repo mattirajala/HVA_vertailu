@@ -8,26 +8,41 @@
 #
 
 library(shiny)
+source('data.R')
 
+
+alueet = Region_Names_HVA()
+indikaattorit = Indicator_Ids()
 # Define UI for application that draws a histogram
-fluidPage(
+navbarPage(
 
     # Application title
-    titlePanel("Old Faithful Geyser Data"),
-
-    # Sidebar with a slider input for number of bins
-    sidebarLayout(
-        sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
-        ),
-
-        # Show a plot of the generated distribution
-        mainPanel(
-            plotOutput("distPlot")
-        )
-    )
+    "Hyvinvointialueiden vertailu",
+    
+    tabPanel("Sotkanet", 
+             
+             sidebarLayout(
+                 sidebarPanel(
+                     sliderInput("bins",
+                                 "Number of bins:",
+                                 min = 1,
+                                 max = 50,
+                                 value = 30),
+                     
+                     selectInput("HVA", "Hyvinvointialue", alueet),
+                     selectInput("IND", "Indikaattori", indikaattorit)
+                 ),
+                 
+                 # Show a plot of the generated distribution
+                 mainPanel(
+                     plotOutput("newPlot"),
+                     textOutput("text"),
+                     textOutput("text2")
+                     
+                     
+                     
+                 )
+             )
+             
+             )
 )

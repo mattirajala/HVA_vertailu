@@ -20,6 +20,16 @@ getRegions = function(){
   return(regions)
 }
 
+Region_Names_HVA = function(){
+  
+  regions = getRegions()
+  regions = regions %>% select(id, title.fi_HVA) %>% distinct()
+  hva = regions$id %>% as.vector()
+  names(hva) = regions$title.fi_HVA %>% as.vector() 
+  hva = hva %>% sort()
+  return(hva)
+}
+ 
 
 getIndicators = function(){
   
@@ -33,6 +43,21 @@ getIndicators = function(){
  
   return(data) 
 }
+
+Indicator_Ids = function(){
+  
+  inds = getIndicators() %>% 
+    select(id, title.fi) %>% 
+    distinct() %>% arrange(title.fi)
+  
+  v = inds$id %>% as.vector()
+  names(v) = inds$title.fi %>% as.vector()
+
+  
+  return(v)
+  
+}
+
 
 
 getIndicatorData = function(indicator_id = 127, year = 2009, gender = 'total'){
@@ -59,3 +84,7 @@ getGroups = function(){
     select(-children_id)%>% 
     unnest_wider(children)
 }
+
+
+
+
