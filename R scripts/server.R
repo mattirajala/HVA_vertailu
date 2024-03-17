@@ -16,13 +16,43 @@ HVA_names = getRegions() %>%
     select(id, title.fi_HVA) %>% 
     distinct() %>% 
     rename(name = title.fi_HVA)
-function(input, output, session) {
 
+groups = getGroups()
+
+indikaattorit = getIndicators()
+
+function(input, output, session) {
+    
+    
+    output$group1 = renderUI({
+        selectInput("Group1","Osa-alue", choices = groups$fi) 
+    })
+    
+    output$group2 = renderUI({
+        
+        req(input$Group1)
+        inds = getGroupIndicators(groups$id[groups$fi == input$Group1])
+        
+        selectInput("Group2","Indikaattoriryhmä", choices = inds$inds.title.fi) 
+    })
+    
+    output$indikaattori = renderUI({
+        
+        req(input$Group1)
+        inds = getGroupIndicators(groups$id[groups$fi == input$Group1])
+        
+        req(input$Group2)
+        indikaattorit_choice = indikaattorit%>% 
+                                    filter(id %in% inds$inds.indicators_under_group[inds$inds.title.fi == input$Group2]) %>% 
+                                    arrange(title.fi)
+
+        selectInput("Indikaattori","Indikaattori", choices = indikaattorit_choice$title.fi)
+    })
     
     output$newPlot = renderPlot({
         
-        
-        data = getIndicatorData(indicator_id = input$IND, year = 2000:2023)
+        req(input$Indikaattori)
+        data = getIndicatorData(indicator_id = unique(indikaattorit$id[indikaattorit$title.fi == input$Indikaattori]), year = 2000:2023)
         data = data %>% 
             filter(region %in% input$HVA) %>% 
             arrange(year) %>% 
@@ -34,6 +64,8 @@ function(input, output, session) {
     })
     
     output$text = renderText({paste0("Alue: ",input$HVA)})
-    output$text2 = renderText({paste0("Indikaattori: ", input$IND)})
+    output$text2 = renderText({
+        req(input$Indikaattori)
+        paste0("Indikaattori: ", unique(indikaattorit$id[indikaattorit$title.fi == input$Indikaattori]))})
 
 }
