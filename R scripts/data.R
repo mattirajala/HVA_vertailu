@@ -3,7 +3,7 @@ library(httr)
 library(jsonlite)
 
 
-
+# Aluetiedot
 getRegions = function(){
   
   url = 'https://sotkanet.fi/rest//1.1/regions'
@@ -19,6 +19,7 @@ getRegions = function(){
   return(regions)
 }
 
+# HVA:den nimet ja koodit
 Region_Names_HVA = function(){
   
   regions = getRegions()
@@ -31,6 +32,7 @@ Region_Names_HVA = function(){
 }
  
 
+# Indikaattorilistaus
 getIndicators = function(){
   
   
@@ -44,6 +46,7 @@ getIndicators = function(){
   return(data) 
 }
 
+# Indikaattoreiden ID:t
 Indicator_Ids = function(){
   
   inds = getIndicators() %>% 
@@ -59,14 +62,24 @@ Indicator_Ids = function(){
 }
 
 
-
+# Indikaattoridata
 getIndicatorData = function(indicator_id = 127, year = 2009, gender = 'total'){
   
   url = paste0('https://sotkanet.fi/rest/1.1/json?indicator=', indicator_id, paste0("&years=",year,collapse = ""), "&genders=", gender)
   resp = GET(url)
-  df = fromJSON(rawToChar(resp$content))
   
-  return(df)
+  if (resp$status_code == 200) {
+    
+    df = fromJSON(rawToChar(resp$content))
+    return(df)
+    
+  }else{
+    
+    return(NULL)
+    
+  }
+  
+
 
 }
 
@@ -80,11 +93,31 @@ getGroups = function(){
     do.call(cbind, .) %>% 
     as.data.frame() %>% 
     unnest_wider(groups) %>% 
-    unnest_longer(children) %>%
-    select(-children_id)%>% 
-    unnest_wider(children)
+    unnest_wider(title) %>% 
+    arrange(fi)
 }
 
+Group_Ids = function(){
+  
+  df = getGroups() %>% select(fi, id) %>% arrange(fi)
+  
+  groups = df$fi %>% as.vector()
+  names(groups) = df$id %>% as.vector()
+  
+  return(groups)
+  
+}
 
+getGroupIndicators = function(group_id = 358){
+  
+  url = paste0('https://sotkanet.fi/sotkanet/api/group/', group_id)
+  resp = GET(url)
+  d = fromJSON(rawToChar(resp$content))
+  
+  df = data.frame(inds = jsonlite::flatten(d$groups_of_group)) %>% 
+    unnest_longer(inds.indicators_under_group)
+  
+  return(df)
+}
 
 
