@@ -23,14 +23,13 @@ navbarPage(
              
              sidebarLayout(
                  sidebarPanel(
-                     sliderInput("bins",
-                                 "Number of bins:",
-                                 min = 1,
-                                 max = 50,
-                                 value = 30),
+                     
                      
                      selectInput("HVA", "Hyvinvointialue", alueet, multiple = T),
-                     selectInput("IND", "Indikaattori", indikaattorit)
+                     uiOutput('group1'),
+                     uiOutput('group2'),
+                     uiOutput('indikaattori')
+                     
                  ),
                  
                  # Show a plot of the generated distribution
