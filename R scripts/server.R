@@ -25,37 +25,26 @@ function(input, output, session) {
     
     
     output$group1 = renderUI({
-        selectInput("Group1","Osa-alue", choices = groups$fi) 
+        selectInput("Group1","Osa-alue", choices = unlist(groups[[1]][,'fi'], use.names = F))
     })
     
     output$group2 = renderUI({
-        
-        req(input$Group1)
-        inds = getGroupIndicators(groups$id[groups$fi == input$Group1])
-        
-        selectInput("Group2","Indikaattoriryhmä", choices = inds$inds.title.fi) 
-    })
-    
-    output$indikaattori = renderUI({
-        
-        req(input$Group1)
-        inds = getGroupIndicators(groups$id[groups$fi == input$Group1])
-        
-        req(input$Group2)
-        indikaattorit_choice = indikaattorit%>% 
-                                    filter(id %in% inds$inds.indicators_under_group[inds$inds.title.fi == input$Group2]) %>% 
-                                    arrange(title.fi)
 
-        selectInput("Indikaattori","Indikaattori", choices = indikaattorit_choice$title.fi)
+        req(input$Group1)
+        id = groups[[1]][groups[[1]]['fi'] == input$Group1,"id_1"] %>% unlist(use.names = F)
+        inds = getGroupIndicators(id)
+        
+        selectInput("IND","Indikaattori", choices = indikaattorit$title.fi[indikaattorit$id %in% inds])
+
     })
+
+
     
     output$newPlot = renderPlot({
         
-        req(input$Indikaattori)
-        data = getIndicatorData(indicator_id = unique(indikaattorit$id[indikaattorit$title.fi == input$Indikaattori]), year = 2000:2023)
+        req(input$IND)
+        data = getIndicatorData(indicator_id = unique(indikaattorit$id[indikaattorit$title.fi == input$IND]),regions = input$HVA ,years = 2000:2023)
         data = data %>% 
-            filter(region %in% input$HVA) %>% 
-            arrange(year) %>% 
             left_join(HVA_names, by=c('region' = 'id'))
         
         
@@ -65,7 +54,7 @@ function(input, output, session) {
     
     output$text = renderText({paste0("Alue: ",input$HVA)})
     output$text2 = renderText({
-        req(input$Indikaattori)
-        paste0("Indikaattori: ", unique(indikaattorit$id[indikaattorit$title.fi == input$Indikaattori]))})
+        req(input$IND)
+        paste0("Indikaattori: ", input$IND)})
 
 }
