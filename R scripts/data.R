@@ -38,10 +38,11 @@ getIndicators = function(){
   
   url = 'https://sotkanet.fi/rest/1.1/indicators'
   resp = GET(url)
-  data = fromJSON(rawToChar(resp$content), flatten = T) %>% 
-    unnest_longer(ncol(.), keep_empty = T) %>% 
-    unnest_longer(ncol(.)-1, keep_empty = T) %>% 
-    filter(classifications.region.values == "Kunta")
+  data = fromJSON(rawToChar(resp$content), flatten = T) 
+  # 
+  # %>% 
+  #   unnest_longer(ncol(.), keep_empty = T) %>% 
+  #   unnest_longer(ncol(.)-1, keep_empty = T) 
  
   return(data) 
 }
@@ -63,14 +64,18 @@ Indicator_Ids = function(){
 
 
 # Indikaattoridata
-getIndicatorData = function(indicator_id = 127, year = 2009, gender = 'total'){
+getIndicatorData = function(indicator_id = 127, years = 2009, gender = 'total', regions = 658){
   
-  url = paste0('https://sotkanet.fi/rest/1.1/json?indicator=', indicator_id, paste0("&years=",year,collapse = ""), "&genders=", gender)
+  url = paste0('https://sotkanet.fi/rest/1.1/json?indicator=', indicator_id, paste0("&years=",years,collapse = ""), "&genders=", gender)
   resp = GET(url)
   
   if (resp$status_code == 200) {
     
     df = fromJSON(rawToChar(resp$content))
+    df = df %>% 
+      filter(region %in% regions) %>% 
+      arrange(year)
+    
     return(df)
     
   }else{
@@ -94,7 +99,50 @@ getGroups = function(){
     as.data.frame() %>% 
     unnest_wider(groups) %>% 
     unnest_wider(title) %>% 
-    arrange(fi)
+    select(-description) %>% 
+    rename(id_1 = id)
+  
+  f_2 = f %>% select(id_1, children) %>% 
+    unnest_longer(children) %>% 
+    unnest_wider(children) %>%
+    unnest_wider(title) %>% 
+    select(-description, -children_id) %>% 
+    rename(id_2 = id) %>% 
+    unnest_longer(indicators, keep_empty = T)
+
+  
+  f_3 = f_2 %>% select(id_2, children) %>% 
+    unnest_longer(children) %>% 
+    unnest_wider(children) %>% 
+    unnest_wider(title) %>% 
+    select(-description, -children_id) %>% 
+    rename(id_3 = id) %>% 
+    unnest_longer(indicators, keep_empty = T)
+  
+  f_4 = f_3 %>% select(id_3, children) %>% 
+    unnest_longer(children) %>% 
+    unnest_wider(children) %>% 
+    unnest_wider(title) %>% 
+    select(-description, -children_id) %>% 
+    rename(id_4 = id) %>% 
+    unnest_longer(indicators, keep_empty = T)
+  
+  f_5 = f_4 %>% select(id_4, children) %>% 
+    unnest_longer(children) %>% 
+    unnest_wider(children) %>% 
+    unnest_wider(title) %>% 
+    select(-description, -children_id) %>% 
+    rename(id_5 = id) %>% 
+    unnest_longer(indicators, keep_empty = T)
+  
+  groups_list = list()
+  groups_list[[1]] = f
+  groups_list[[2]] = f_2
+  groups_list[[3]] = f_3
+  groups_list[[4]] = f_4
+  groups_list[[5]] = f_5
+  
+  return(groups_list)
 }
 
 Group_Ids = function(){
@@ -114,10 +162,11 @@ getGroupIndicators = function(group_id = 358){
   resp = GET(url)
   d = fromJSON(rawToChar(resp$content))
   
-  df = data.frame(inds = jsonlite::flatten(d$groups_of_group)) %>% 
+  df = data.frame(inds = jsonlite::flatten(d$groups_of_group)) %>%
     unnest_longer(inds.indicators_under_group)
   
-  return(df)
+  return(d$indicators_under_group)
 }
+
 
 
