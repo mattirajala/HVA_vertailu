@@ -28,7 +28,6 @@ navbarPage(
                      selectInput("HVA", "Hyvinvointialue", alueet, multiple = T),
                      uiOutput('group1'),
                      uiOutput('group2'),
-                     uiOutput('indikaattori')
                      
                  ),
                  
