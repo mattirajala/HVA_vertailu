@@ -23,38 +23,47 @@ indikaattorit = getIndicators()
 
 function(input, output, session) {
     
-    
-    output$group1 = renderUI({
-        selectInput("Group1","Osa-alue", choices = unlist(groups[[1]][,'fi'], use.names = F))
-    })
-    
-    output$group2 = renderUI({
-
-        req(input$Group1)
-        id = groups[[1]][groups[[1]]['fi'] == input$Group1,"id_1"] %>% unlist(use.names = F)
-        inds = getGroupIndicators(id)
+    data = reactive({
         
-        selectInput("IND","Indikaattori", choices = indikaattorit$title.fi[indikaattorit$id %in% inds])
-
+        vuosi1 = input$VUOSI[1]
+        vuosi2 = input$VUOSI[2]
+        getIndicatorData(indicator_id = input$ID, years = vuosi1:vuosi2, regions = input$HVA)
+        
     })
-
-
     
     output$newPlot = renderPlot({
         
-        req(input$IND)
-        data = getIndicatorData(indicator_id = unique(indikaattorit$id[indikaattorit$title.fi == input$IND]),regions = input$HVA ,years = 2000:2023)
-        data = data %>% 
+
+
+        df = data() %>% 
             left_join(HVA_names, by=c('region' = 'id'))
         
         
-        data %>% ggplot(aes(year, value, col = name))+geom_line(size=1.5) + theme_classic()
+        df %>% ggplot(aes(year, value, col = name))+
+            geom_line(size=1.5) + 
+            geom_point(size=4, fill = 'white', shape = 21) + 
+            theme_classic() +
+            scale_x_continuous(breaks =  seq(input$VUOSI[1], input$VUOSI[2], by = 1))+
+            labs(x = 'Vuosi', y = 'Arvo')+
+            theme(legend.text = element_text(size = 15),
+                  legend.position = 'bottom',
+                  axis.text = element_text(size = 15),
+                  axis.title = element_text(size = 20))
         
     })
     
-    output$text = renderText({paste0("Alue: ",input$HVA)})
+    output$table = renderTable({
+        
+        data() %>% 
+            left_join(HVA_names, by=c('region' = 'id')) %>% 
+            select(name, value, gender, year) %>% 
+            pivot_wider(names_from = year, values_from = value)
+        
+        
+    })
+    
+    output$text = renderText({paste0("Alue: ",input$HVA, input$VUOSI)})
     output$text2 = renderText({
-        req(input$IND)
-        paste0("Indikaattori: ", input$IND)})
+        input$VUOSI[1]})
 
 }
