@@ -26,14 +26,17 @@ navbarPage(
                      
                      
                      selectInput("HVA", "Hyvinvointialue", alueet, multiple = T),
-                     uiOutput('group1'),
-                     uiOutput('group2'),
+                     selectInput("ID", "Indikaattori", indikaattorit),
+                     sliderInput("VUOSI", "Valitse vuosi", min = 2000, max = year(Sys.Date())-1, step = 1, value = c(2010,2023), sep = ""),
+                     
                      
                  ),
                  
                  # Show a plot of the generated distribution
                  mainPanel(
+                     radioButtons("LAN", "Language", choices = c("FI" = "title.fi")),
                      plotOutput("newPlot"),
+                     tableOutput("table"),
                      textOutput("text"),
                      textOutput("text2")
                      
