@@ -39,23 +39,19 @@ getIndicators = function(){
   url = 'https://sotkanet.fi/rest/1.1/indicators'
   resp = GET(url)
   data = fromJSON(rawToChar(resp$content), flatten = T) 
-  # 
-  # %>% 
-  #   unnest_longer(ncol(.), keep_empty = T) %>% 
-  #   unnest_longer(ncol(.)-1, keep_empty = T) 
  
   return(data) 
 }
 
 # Indikaattoreiden ID:t
-Indicator_Ids = function(){
+Indicator_Ids = function(lan = 'title.fi'){
   
   inds = getIndicators() %>% 
-    select(id, title.fi) %>% 
-    distinct() %>% arrange(title.fi)
+    select(id, {{lan}}) %>% 
+    distinct() %>% arrange(.data[[lan]])
   
   v = inds$id %>% as.vector()
-  names(v) = inds$title.fi %>% as.vector()
+  names(v) = inds[[lan]] %>% as.vector()
 
   
   return(v)
@@ -142,7 +138,7 @@ getGroups = function(){
   groups_list[[4]] = f_4
   groups_list[[5]] = f_5
   
-  return(groups_list)
+  return(f)
 }
 
 Group_Ids = function(){
