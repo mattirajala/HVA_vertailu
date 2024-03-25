@@ -4,7 +4,7 @@ library(jsonlite)
 
 
 # Aluetiedot
-getRegions = function(){
+getRegions = function(lan = 'title.fi'){
   
   url = 'https://sotkanet.fi/rest//1.1/regions'
   
@@ -13,21 +13,31 @@ getRegions = function(){
   
   regions = d %>% 
     filter(category == "HYVINVOINTIALUE") %>% 
-    select(id, code, title.fi) %>% 
-    left_join(d[d$category == "KUNTA",c("id", "code", "title.fi", "memberOf")], by = c("id" = "memberOf"), suffix = c("_HVA", "_KUNTA"))
+    select(id, code, {{lan}}) %>% 
+    left_join(d[d$category == "KUNTA",c("id", "code", lan, "memberOf")], by = c("id" = "memberOf"), suffix = c("_HVA", "_KUNTA"))
   
   return(regions)
 }
 
 # HVA:den nimet ja koodit
-Region_Names_HVA = function(){
+Region_Names_HVA = function(lan = 'title.fi', vector = TRUE){
   
-  regions = getRegions()
-  regions = regions %>% select(id, title.fi_HVA) %>% distinct()
-  hva = regions$id %>% as.vector()
-  names(hva) = regions$title.fi_HVA %>% as.vector() 
-  hva = hva %>% sort()
+  regions = getRegions(lan)
+  regions = regions %>% select(1, 3) %>% 
+    distinct() %>% 
+    arrange(pick(contains("HVA")))
   
+  if (vector) {
+    
+    hva = regions$id %>% as.vector()
+    names(hva) = regions[[2]] %>% as.vector() 
+  
+    }else{
+    
+    hva = regions %>% rename(name = 2)
+    
+  }
+
   return(hva)
 }
  
@@ -96,72 +106,78 @@ getGroups = function(){
     unnest_wider(groups) %>% 
     unnest_wider(title) %>% 
     select(-description) %>% 
-    rename(id_1 = id)
+    rename(id_1 = id) %>% 
+    filter(children != "NULL")
   
-  f_2 = f %>% select(id_1, children) %>% 
-    unnest_longer(children) %>% 
-    unnest_wider(children) %>%
-    unnest_wider(title) %>% 
-    select(-description, -children_id) %>% 
-    rename(id_2 = id) %>% 
-    unnest_longer(indicators, keep_empty = T)
-
-  
-  f_3 = f_2 %>% select(id_2, children) %>% 
-    unnest_longer(children) %>% 
-    unnest_wider(children) %>% 
-    unnest_wider(title) %>% 
-    select(-description, -children_id) %>% 
-    rename(id_3 = id) %>% 
-    unnest_longer(indicators, keep_empty = T)
-  
-  f_4 = f_3 %>% select(id_3, children) %>% 
-    unnest_longer(children) %>% 
-    unnest_wider(children) %>% 
-    unnest_wider(title) %>% 
-    select(-description, -children_id) %>% 
-    rename(id_4 = id) %>% 
-    unnest_longer(indicators, keep_empty = T)
-  
-  f_5 = f_4 %>% select(id_4, children) %>% 
-    unnest_longer(children) %>% 
-    unnest_wider(children) %>% 
-    unnest_wider(title) %>% 
-    select(-description, -children_id) %>% 
-    rename(id_5 = id) %>% 
-    unnest_longer(indicators, keep_empty = T)
-  
-  groups_list = list()
-  groups_list[[1]] = f
-  groups_list[[2]] = f_2
-  groups_list[[3]] = f_3
-  groups_list[[4]] = f_4
-  groups_list[[5]] = f_5
-  
+  # f_2 = f %>% select(id_1, children) %>% 
+  #   unnest_longer(children) %>% 
+  #   unnest_wider(children) %>%
+  #   unnest_wider(title) %>% 
+  #   select(-description, -children_id) %>% 
+  #   rename(id_2 = id) %>% 
+  #   unnest_longer(indicators, keep_empty = T)
+  # 
+  # 
+  # f_3 = f_2 %>% select(id_2, children) %>% 
+  #   unnest_longer(children) %>% 
+  #   unnest_wider(children) %>% 
+  #   unnest_wider(title) %>% 
+  #   select(-description, -children_id) %>% 
+  #   rename(id_3 = id) %>% 
+  #   unnest_longer(indicators, keep_empty = T)
+  # 
+  # f_4 = f_3 %>% select(id_3, children) %>% 
+  #   unnest_longer(children) %>% 
+  #   unnest_wider(children) %>% 
+  #   unnest_wider(title) %>% 
+  #   select(-description, -children_id) %>% 
+  #   rename(id_4 = id) %>% 
+  #   unnest_longer(indicators, keep_empty = T)
+  # 
+  # f_5 = f_4 %>% select(id_4, children) %>% 
+  #   unnest_longer(children) %>% 
+  #   unnest_wider(children) %>% 
+  #   unnest_wider(title) %>% 
+  #   select(-description, -children_id) %>% 
+  #   rename(id_5 = id) %>% 
+  #   unnest_longer(indicators, keep_empty = T)
+  # 
+  # groups_list = list()
+  # groups_list[[1]] = f
+  # groups_list[[2]] = f_2
+  # groups_list[[3]] = f_3
+  # groups_list[[4]] = f_4
+  # groups_list[[5]] = f_5
+  # 
   return(f)
 }
 
-Group_Ids = function(){
+Group_Ids = function(lan = 'title.fi'){
   
-  df = getGroups() %>% select(fi, id) %>% arrange(fi)
+  lan = str_split(lan, "\\.", simplify = T)[,2]
   
-  groups = df$fi %>% as.vector()
-  names(groups) = df$id %>% as.vector()
+  df = getGroups() %>% select({{lan}}, id_1) %>% arrange(.data[[lan]])
+  
+  groups = df$id_1 %>% as.vector()
+  names(groups) =  df[[lan]] %>% as.vector()
   
   return(groups)
   
 }
 
-getGroupIndicators = function(group_id = 358){
+getGroupIndicators = function(group_id = 358, lan = 'title.fi'){
   
   url = paste0('https://sotkanet.fi/sotkanet/api/group/', group_id)
   resp = GET(url)
   d = fromJSON(rawToChar(resp$content))
-  
+  lan = paste0('inds.', lan)
   df = data.frame(inds = jsonlite::flatten(d$groups_of_group)) %>%
-    unnest_longer(inds.indicators_under_group)
+    unnest_longer(inds.indicators_under_group) %>% 
+    select(1,2, {{lan}}) %>% 
+    rename('title' = 3)
   
-  return(d$indicators_under_group)
+  # return(d$indicators_under_group)
+  return(df)
 }
 
 
