@@ -12,31 +12,64 @@ library(tidyverse)
 
 # Define server logic required to draw a histogram
 
-HVA_names = getRegions() %>% 
-    select(id, title.fi_HVA) %>% 
-    distinct() %>% 
-    rename(name = title.fi_HVA)
-
 groups = getGroups()
 
-indikaattorit = getIndicators()
 
 function(input, output, session) {
     
+    # HVA-nimet
+    HVA_names = reactive({Region_Names_HVA(input$LAN, vector = F)})
+    
+    # Indikaattoridata
     data = reactive({
         
         vuosi1 = input$VUOSI[1]
         vuosi2 = input$VUOSI[2]
-        getIndicatorData(indicator_id = input$ID, years = vuosi1:vuosi2, regions = input$HVA)
+        getIndicatorData(indicator_id = indikaattori_ID()[input$ID] , years = vuosi1:vuosi2, regions = input$HVA)
         
     })
     
+    # Aihepiirin valinta
+    output$GROUP_ID = renderUI({
+        
+        selectInput("GROUP_ID", "Aihepiiri", Group_Ids(input$LAN)) 
+        
+    })
+    
+    # Osa-alueet --> määräytyy ensimmäisen aihepiirin avulla
+    sub_groups = reactive({
+        req(input$GROUP_ID)
+        req(input$LAN)
+        getGroupIndicators(input$GROUP_ID, input$LAN)})
+    
+    observeEvent(input$GROUP_ID, {
+                
+                updateSelectInput(inputId = "GROUP_ID_2", choices = sub_groups()$title)})
+    
+    # Indikaattorit --> määräytyy osa-alueen avulla
+    indicators = reactive({
+        
+        req(input$GROUP_ID_2)
+        getIndicators() %>% filter(id %in% unique(sub_groups()$inds.indicators_under_group[sub_groups()$title == input$GROUP_ID_2]))
+        
+    })
+    
+    observeEvent(input$GROUP_ID_2, {
+        
+        updateSelectInput(inputId = "ID", choices = indicators()[[input$LAN]])
+        
+    })
+    
+    # Indikaattoreiden ID:t --> tarvitaan datan haussa, haetaan valitun indikaattorin avulla
+    indikaattori_ID = reactive({Indicator_Ids(input$LAN)})
+    
+    # Kuvaaja
     output$newPlot = renderPlot({
         
 
 
         df = data() %>% 
-            left_join(HVA_names, by=c('region' = 'id'))
+            left_join(HVA_names(), by=c('region' = 'id'))
         
         
         df %>% ggplot(aes(year, value, col = name))+
@@ -55,15 +88,24 @@ function(input, output, session) {
     output$table = renderTable({
         
         data() %>% 
-            left_join(HVA_names, by=c('region' = 'id')) %>% 
+            left_join(HVA_names(), by=c('region' = 'id')) %>% 
             select(name, value, gender, year) %>% 
             pivot_wider(names_from = year, values_from = value)
         
         
-    })
+    }, striped = T)
+    
     
     output$text = renderText({paste0("Alue: ",input$HVA, input$VUOSI)})
     output$text2 = renderText({
         input$VUOSI[1]})
+    
+    output$HVA_valinta = renderUI({
+        
+        selectInput("HVA", "Hyvinvointialue", Region_Names_HVA(input$LAN), multiple = T) 
+        
+    })
+    
+    
 
 }
